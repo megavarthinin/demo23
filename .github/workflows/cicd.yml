@@ -17,6 +17,7 @@ jobs:
       uses: webfactory/ssh-agent@v0.5.3
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}  # Ensure your private SSH key is in GitHub Secrets
+        ssh-passphrase: ""  # Set this to empty since there's no passphrase for the key
 
     - name: Upload hello.txt to server
       run: |
