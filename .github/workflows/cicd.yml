@@ -14,16 +14,21 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Set up SSH
-      uses: webfactory/ssh-agent@v0.5.3
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}  # Ensure your private SSH key is in GitHub Secrets
-        ssh-passphrase: "mega"  # Set this to empty since there's no passphrase for the key
+      run: |
+        # Create SSH directory
+        mkdir -p ~/.ssh
+        # Add the SSH private key to the SSH agent
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        echo "${{ secrets.SSH_PASSPHRASE }}" | ssh-add ~/.ssh/id_rsa  # Passphrase provided here
+        chmod 600 ~/.ssh/id_rsa
+        # Add GitHub to known hosts to prevent prompt
+        ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
     - name: Upload hello.txt to server
       run: |
         # Ensure the file exists before attempting to copy it
         if [ -f hello.txt ]; then
-          scp -o StrictHostKeyChecking=no hello.txt mega@192.168.1.7:/home/mega/uploads/
+          scp -o StrictHostKeyChecking=no hello.txt user@192.168.1.7:/home/mega/uploads/
         else
           echo "hello.txt not found!"
           exit 1
@@ -31,4 +36,4 @@ jobs:
 
     - name: SSH to server and navigate to directory
       run: |
-        ssh -o StrictHostKeyChecking=no mega@192.168.1.7 "cd /home/mega/uploads/ && ls -l"
+        ssh -o StrictHostKeyChecking=no user@192.168.1.7 "cd /home/mega/uploads/ && ls -l"
