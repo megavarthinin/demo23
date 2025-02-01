@@ -3,7 +3,7 @@ name: Upload hello.txt File to Server
 on:
   push:
     branches:
-      - main  # Adjust this to the branch you're working with
+      - main  # Adjust this to the branch you're working with.
 
 jobs:
   deploy:
