@@ -3,7 +3,7 @@ name: Upload hello.txt File to Server
 on:
   push:
     branches:
-      - main  # Adjust this to the branch you're working with.
+      - main  # Adjust this to the branch you're working with
 
 jobs:
   deploy:
@@ -30,8 +30,10 @@ jobs:
         if [ -f hello.txt ]; then
           scp -o StrictHostKeyChecking=no hello.txt mega@122.165.254.175:/home/mega/uploads/
         else
-          echo "hello.txt not found!"          exit 1
-       fi
+          echo "hello.txt not found!"
+          exit 1
+        fi
+
     - name: SSH to server and navigate to directory
       run: |
         ssh -o StrictHostKeyChecking=no mega@122.165.254.175 "cd /home/mega/uploads/ && ls -l"
