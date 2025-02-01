@@ -20,16 +20,15 @@ jobs:
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           chmod 700 ~/.ssh
-          ls -la ~/.ssh/deploy_key
-          # Debug: Show the type of key (should match your generated key)
-          ssh-keygen -l -f ~/.ssh/deploy_key
           
-      - name: Test SSH Connection
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-        run: |
-          ssh -v -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST 'echo "SSH connection successful"'
+          # Verify key fingerprint matches the expected one
+          FINGERPRINT=$(ssh-keygen -lf ~/.ssh/deploy_key | awk '{print $2}')
+          EXPECTED="SHA256:4RfbQgtVTJIW2OkRgGfvvIVC3X3YGZsl6leDOGnB6ac"
+          echo "Current key fingerprint: $FINGERPRINT"
+          if [ "$FINGERPRINT" != "$EXPECTED" ]; then
+            echo "Warning: Key fingerprint does not match expected value"
+            exit 1
+          fi
           
       - name: Copy script to server
         env:
@@ -38,4 +37,4 @@ jobs:
           SCRIPT_PATH: "./hello.txt"
           REMOTE_PATH: "/home/mega/uploads"
         run: |
-          scp -v -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no $SCRIPT_PATH $SSH_USER@$SSH_HOST:$REMOTE_PATH
+          scp -i ~/.ssh/deploy_key $SCRIPT_PATH $SSH_USER@$SSH_HOST:$REMOTE_PATH
