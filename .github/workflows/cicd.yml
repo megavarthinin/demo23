@@ -1,10 +1,8 @@
 name: Deploy Script to Server
-
 on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -24,13 +22,14 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           eval $(ssh-agent -s)
           echo "$SSH_PASSPHRASE" | SSH_ASKPASS=/bin/echo ssh-add ~/.ssh/deploy_key
-          echo "$SSH_HOST" >> ~/.ssh/known_hosts
+          # Disable strict host key checking and add the host key
+          echo "StrictHostKeyChecking no" >> ~/.ssh/config
           
       - name: Copy script to server
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
-          SCRIPT_PATH: "./hello.txt"  # Update this path
-          REMOTE_PATH: "/home/mega/uploads"  # Update this path
+          SCRIPT_PATH: "./hello.txt"
+          REMOTE_PATH: "/home/mega/uploads"
         run: |
-          scp -o "IdentityFile=~/.ssh/deploy_key" $SCRIPT_PATH $SSH_USER@$SSH_HOST:$REMOTE_PATH
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key $SCRIPT_PATH $SSH_USER@$SSH_HOST:$REMOTE_PATH
