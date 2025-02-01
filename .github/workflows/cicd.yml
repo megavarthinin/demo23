@@ -20,8 +20,14 @@ jobs:
 
     - name: Upload hello.txt to server
       run: |
-        scp hello.txt user@192.168.1.7:/path/to/destination/directory
+        # Ensure the file exists before attempting to copy it
+        if [ -f hello.txt ]; then
+          scp -o StrictHostKeyChecking=no hello.txt user@192.168.1.7:/path/to/destination/directory
+        else
+          echo "hello.txt not found!"
+          exit 1
+        fi
 
     - name: SSH to server and navigate to directory
       run: |
-        ssh -o StrictHostKeyChecking=no user@192.168.1.7 "cd /path/to/destination/directory && ls -l"  # Replace with your desired directory and commands
+        ssh -o StrictHostKeyChecking=no user@192.168.1.7 "cd /path/to/destination/directory && ls -l"
