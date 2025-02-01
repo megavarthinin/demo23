@@ -1,42 +1,36 @@
-name: Upload hello.txt File to Server
+name: Deploy Script to Server
 
 on:
   push:
-    branches:
-      - main  # Adjust this to the branch you're working with
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
-    - name: Set up SSH
-      run: |
-        # Create SSH directory
-        mkdir -p ~/.ssh
-        # Add the SSH private key to the SSH agent
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        # Start SSH agent
-        eval $(ssh-agent -s)
-        # Add the SSH private key to the agent and provide the passphrase
-        echo "${{ secrets.SSH_PASSPHRASE }}" | ssh-add ~/.ssh/id_rsa
-        # Add GitHub to known hosts to prevent prompt
-        ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-
-    - name: Upload hello.txt to server
-      run: |
-        # Ensure the file exists before attempting to copy it
-        if [ -f hello.txt ]; then
-          scp -o StrictHostKeyChecking=no hello.txt mega@122.165.254.175:/home/mega/uploads/
-        else
-          echo "hello.txt not found!"
-          exit 1
-        fi
-
-    - name: SSH to server and navigate to directory
-      run: |
-        ssh -o StrictHostKeyChecking=no mega@122.165.254.175 "cd /home/mega/uploads/ && ls -l"
+      - uses: actions/checkout@v3
+        
+      - name: Setup SSH Keys and known_hosts
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_PASSPHRASE: ${{ secrets.SSH_PASSPHRASE }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          eval $(ssh-agent -s)
+          echo "$SSH_PASSPHRASE" | SSH_ASKPASS=/bin/echo ssh-add ~/.ssh/deploy_key
+          echo "$SSH_HOST" >> ~/.ssh/known_hosts
+          
+      - name: Copy script to server
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SCRIPT_PATH: "./your-script.sh"  # Update this path
+          REMOTE_PATH: "/path/to/destination"  # Update this path
+        run: |
+          scp -o "IdentityFile=~/.ssh/deploy_key" $SCRIPT_PATH $SSH_USER@$SSH_HOST:$REMOTE_PATH
