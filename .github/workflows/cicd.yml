@@ -19,8 +19,11 @@ jobs:
         mkdir -p ~/.ssh
         # Add the SSH private key to the SSH agent
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        echo "${{ secrets.SSH_PASSPHRASE }}" | ssh-add ~/.ssh/id_rsa  # Passphrase provided here
         chmod 600 ~/.ssh/id_rsa
+        # Start SSH agent
+        eval $(ssh-agent -s)
+        # Add the SSH private key to the agent and provide the passphrase
+        echo "${{ secrets.SSH_PASSPHRASE }}" | ssh-add ~/.ssh/id_rsa
         # Add GitHub to known hosts to prevent prompt
         ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
