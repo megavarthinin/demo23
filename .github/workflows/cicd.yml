@@ -1,32 +1,39 @@
-name: Upload hello.txt File to Server
-
 on:
   push:
-    branches:
-      - main  # Adjust this to the branch you're working with
- 
-
+    branches: [ "main" ]
+  workflow_dispatch:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
-    - name: Set up SSH
-      uses: webfactory/ssh-agent@v0.5.3
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}  # Ensure your private SSH key is in GitHub Secrets
-
-    - name: Upload hello.txt to server
-      run: |
-        scp hello.txt user@192.168.1.7:/path/to/destination/directory
-      env:
-        SSH_AUTH_SOCK: ${{ secrets.SSH_AUTH_SOCK }}
-
-    - name: SSH to server and navigate to directory
-      run: |
-        ssh -o StrictHostKeyChecking=no user@192.168.1.7 "cd /path/to/destination/directory && ls -l"  # Replace with your desired directory and commands
-      env:
-        SSH_AUTH_SOCK: ${{ secrets.SSH_AUTH_SOCK }}
+      - uses: actions/checkout@v3
+        
+      - name: Setup SSH Keys and known_hosts
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          chmod 700 ~/.ssh
+          
+          # Verify key fingerprint matches the expected one
+          FINGERPRINT=$(ssh-keygen -lf ~/.ssh/deploy_key | awk '{print $2}')
+          EXPECTED="SHA256:4RfbQgtVTJIW2OkRgGfvvIVC3X3YGZsl6leDOGnB6ac"
+          echo "Current key fingerprint: $FINGERPRINT"
+          if [ "$FINGERPRINT" != "$EXPECTED" ]; then
+            echo "Warning: Key fingerprint does not match expected value"
+            exit 1
+          fi
+          
+      - name: Copy script to server
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SCRIPT_PATH: "./hello.txt"
+          REMOTE_PATH: "/home/mega/uploads"
+        run: |
+          scp -i ~/.ssh/deploy_key $SCRIPT_PATH $SSH_USER@$SSH_HOST:$REMOTE_PATH
