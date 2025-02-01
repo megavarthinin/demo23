@@ -30,7 +30,7 @@ jobs:
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
-          SCRIPT_PATH: "./your-script.sh"  # Update this path
-          REMOTE_PATH: "/path/to/destination"  # Update this path
+          SCRIPT_PATH: "./hello.txt"  # Update this path
+          REMOTE_PATH: "/home/mega/uploads"  # Update this path
         run: |
           scp -o "IdentityFile=~/.ssh/deploy_key" $SCRIPT_PATH $SSH_USER@$SSH_HOST:$REMOTE_PATH
