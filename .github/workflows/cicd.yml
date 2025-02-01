@@ -13,17 +13,23 @@ jobs:
       - name: Setup SSH Keys and known_hosts
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SSH_PASSPHRASE: ${{ secrets.SSH_PASSPHRASE }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
         run: |
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          eval $(ssh-agent -s)
-          echo "$SSH_PASSPHRASE" | SSH_ASKPASS=/bin/echo ssh-add ~/.ssh/deploy_key
-          # Disable strict host key checking and add the host key
-          echo "StrictHostKeyChecking no" >> ~/.ssh/config
+          chmod 700 ~/.ssh
+          ls -la ~/.ssh/deploy_key
+          # Debug: Show the type of key (should match your generated key)
+          ssh-keygen -l -f ~/.ssh/deploy_key
+          
+      - name: Test SSH Connection
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          ssh -v -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST 'echo "SSH connection successful"'
           
       - name: Copy script to server
         env:
@@ -32,4 +38,4 @@ jobs:
           SCRIPT_PATH: "./hello.txt"
           REMOTE_PATH: "/home/mega/uploads"
         run: |
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key $SCRIPT_PATH $SSH_USER@$SSH_HOST:$REMOTE_PATH
+          scp -v -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no $SCRIPT_PATH $SSH_USER@$SSH_HOST:$REMOTE_PATH
