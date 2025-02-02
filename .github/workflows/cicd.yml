@@ -2,6 +2,7 @@ on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -15,11 +16,18 @@ jobs:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
         run: |
+          # Create SSH directory and set permissions
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
           chmod 700 ~/.ssh
           
+          # Write SSH private key
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          # Add remote host to known_hosts to avoid prompt
+          ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
           # Verify key fingerprint matches the expected one
           FINGERPRINT=$(ssh-keygen -lf ~/.ssh/deploy_key | awk '{print $2}')
           EXPECTED="SHA256:4RfbQgtVTJIW2OkRgGfvvIVC3X3YGZsl6leDOGnB6ac"
@@ -33,7 +41,8 @@ jobs:
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
-          SCRIPT_PATH: "./hello.txt"
+          SCRIPT_PATH: "./hello.txt"  # Ensure this path is correct relative to the repo
           REMOTE_PATH: "/home/mega/uploads"
         run: |
+          # Ensure SCP works correctly by using the correct private key
           scp -i ~/.ssh/deploy_key $SCRIPT_PATH $SSH_USER@$SSH_HOST:$REMOTE_PATH
